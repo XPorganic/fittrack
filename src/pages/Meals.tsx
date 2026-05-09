@@ -81,7 +81,7 @@ export default function Meals() {
   const handleAddMeal = () => {
     const calories = selectedFood
       ? Math.round((parseFloat(amount) / 100) * selectedFood.caloriesPer100g)
-      : parseFloat(customFood.calories || '0');
+      : Math.round((parseFloat(amount) / 100) * parseFloat(customFood.calories || '0'));
 
     if (customFood.name && calories > 0) {
       addMeal({
@@ -378,19 +378,28 @@ export default function Meals() {
           {mealTypes.map((type) => {
             const info = mealTypeLabels[type];
             const Icon = info.icon;
-            const percentage = totalCalories > 0 ? (caloriesByType[type] / totalCalories) * 100 : 0;
+            const mealCalories = caloriesByType[type] || 0;
+            const percentage = totalCalories > 0 ? (mealCalories / totalCalories) * 100 : 0;
+            const bgColor = info.color.replace('text-', 'bg-');
+            
             return (
               <div key={type} className="flex items-center gap-3">
                 <Icon className={clsx('w-5 h-5', info.color)} />
                 <div className="flex-1">
                   <div className="flex justify-between mb-1">
                     <span className="text-sm text-gray-600">{info.label}</span>
-                    <span className="text-sm font-medium text-gray-800">{caloriesByType[type]} kcal</span>
+                    <span className="text-sm font-medium text-gray-800">{mealCalories} kcal</span>
                   </div>
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className={clsx('h-full rounded-full transition-all duration-500', info.color.replace('text-', 'bg-'))}
-                      style={{ width: `${percentage}%` }}
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ 
+                        width: `${Math.max(percentage, 0)}%`,
+                        backgroundColor: type === 'breakfast' ? '#F59E0B' : 
+                                        type === 'lunch' ? '#F97316' : 
+                                        type === 'dinner' ? '#6366F1' : 
+                                        '#EC4899'
+                      }}
                     />
                   </div>
                 </div>
