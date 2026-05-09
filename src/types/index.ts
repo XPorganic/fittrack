@@ -40,4 +40,9 @@ export interface FoodItem {
   category: string;
 }
 
+export interface CustomFoodItem extends FoodItem {
+  id: string;
+  createdAt: string;
+}
+
 export type TimeRange = '7d' | '30d' | '90d' | 'all';

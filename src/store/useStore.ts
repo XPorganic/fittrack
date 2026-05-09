@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Profile, WeightRecord, MealRecord, Goal } from '@/types';
+import { Profile, WeightRecord, MealRecord, Goal, CustomFoodItem } from '@/types';
 import dayjs from 'dayjs';
 
 interface AppState {
@@ -9,6 +9,7 @@ interface AppState {
   meals: MealRecord[];
   goal: Goal | null;
   isInitialized: boolean;
+  customFoods: CustomFoodItem[];
   
   setProfile: (profile: Profile) => void;
   addWeight: (weight: number) => void;
@@ -20,6 +21,8 @@ interface AppState {
   exportData: () => string;
   importData: (data: string) => boolean;
   setInitialized: () => void;
+  addCustomFood: (food: Omit<CustomFoodItem, 'id' | 'createdAt'>) => void;
+  removeCustomFood: (id: string) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -30,6 +33,7 @@ export const useStore = create<AppState>()(
       meals: [],
       goal: null,
       isInitialized: false,
+      customFoods: [],
 
       setProfile: (profile) => set({ profile }),
 
@@ -74,12 +78,13 @@ export const useStore = create<AppState>()(
         weights: [],
         meals: [],
         goal: null,
-        isInitialized: false
+        isInitialized: false,
+        customFoods: []
       }),
 
       exportData: () => {
-        const { profile, weights, meals, goal } = get();
-        const data = { profile, weights, meals, goal, exportedAt: dayjs().format('YYYY-MM-DD HH:mm:ss') };
+        const { profile, weights, meals, goal, customFoods } = get();
+        const data = { profile, weights, meals, goal, customFoods, exportedAt: dayjs().format('YYYY-MM-DD HH:mm:ss') };
         return JSON.stringify(data, null, 2);
       },
 
@@ -90,13 +95,27 @@ export const useStore = create<AppState>()(
           if (parsed.weights) set({ weights: parsed.weights });
           if (parsed.meals) set({ meals: parsed.meals });
           if (parsed.goal) set({ goal: parsed.goal });
+          if (parsed.customFoods) set({ customFoods: parsed.customFoods });
           return true;
         } catch {
           return false;
         }
       },
 
-      setInitialized: () => set({ isInitialized: true })
+      setInitialized: () => set({ isInitialized: true }),
+
+      addCustomFood: (food) => {
+        const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        set((state) => ({
+          customFoods: [...state.customFoods, { ...food, id, createdAt: dayjs().format('YYYY-MM-DD HH:mm:ss') }]
+        }));
+      },
+
+      removeCustomFood: (id) => {
+        set((state) => ({
+          customFoods: state.customFoods.filter(f => f.id !== id)
+        }));
+      }
     }),
     {
       name: 'fittrack-storage'

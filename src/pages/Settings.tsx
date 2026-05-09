@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
 import { useStore } from '@/store/useStore';
-import { User, Scale, Download, Upload, Trash2, Save, Check, Activity } from 'lucide-react';
+import { User, Scale, Download, Upload, Trash2, Save, Check, Activity, Bookmark } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export default function Settings() {
-  const { profile, weights, meals, goal, setProfile, exportData, importData, clearAllData, setInitialized } = useStore();
+  const { profile, weights, meals, goal, customFoods, setProfile, exportData, importData, clearAllData, setInitialized, removeCustomFood } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
@@ -229,11 +229,38 @@ export default function Settings() {
             <p className="text-sm text-gray-500">饮食记录</p>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded-xl">
-            <p className="text-2xl font-bold text-gray-800">{goal ? '1' : '0'}</p>
-            <p className="text-sm text-gray-500">目标</p>
+            <p className="text-2xl font-bold text-gray-800">{customFoods.length}</p>
+            <p className="text-sm text-gray-500">自定义食物</p>
           </div>
         </div>
       </div>
+
+      {customFoods.length > 0 && (
+        <div className="card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <Bookmark className="w-5 h-5 text-amber-500" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-800">我的食物库</h2>
+          </div>
+          <div className="space-y-2">
+            {customFoods.map((food) => (
+              <div key={food.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                <div>
+                  <p className="font-medium text-gray-800">{food.name}</p>
+                  <p className="text-sm text-gray-500">{food.caloriesPer100g} kcal/100g · {food.category}</p>
+                </div>
+                <button
+                  onClick={() => removeCustomFood(food.id)}
+                  className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="flex items-center gap-3 mb-6">

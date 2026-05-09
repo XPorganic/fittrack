@@ -2,9 +2,10 @@ import { useState, useMemo } from 'react';
 import { useStore } from '@/store/useStore';
 import { foodDatabase, searchFood } from '@/data/foodDatabase';
 import { getCaloriesByMealType } from '@/services/calorieService';
-import { X, Plus, Search, Trash2, Coffee, Sun, Moon, Cookie, Flame } from 'lucide-react';
+import { X, Plus, Search, Trash2, Coffee, Sun, Moon, Cookie, Flame, Bookmark, BookmarkCheck } from 'lucide-react';
 import dayjs from 'dayjs';
 import { clsx } from 'clsx';
+import { FoodItem } from '@/types';
 
 const mealTypeLabels = {
   breakfast: { label: '早餐', icon: Coffee, color: 'text-amber-500' },
@@ -16,7 +17,7 @@ const mealTypeLabels = {
 const mealTypes: Array<'breakfast' | 'lunch' | 'dinner' | 'snack'> = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 export default function Meals() {
-  const { profile, weights, meals, addMeal, removeMeal } = useStore();
+  const { profile, weights, meals, addMeal, removeMeal, customFoods, addCustomFood, removeCustomFood } = useStore();
   const today = dayjs().format('YYYY-MM-DD');
   const [activeMealType, setActiveMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('breakfast');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -24,6 +25,7 @@ export default function Meals() {
   const [selectedFood, setSelectedFood] = useState<{ name: string; caloriesPer100g: number } | null>(null);
   const [customFood, setCustomFood] = useState({ name: '', calories: '' });
   const [amount, setAmount] = useState('100');
+  const [saveToLibrary, setSaveToLibrary] = useState(false);
 
   const currentWeight = weights.length > 0 ? weights[weights.length - 1].weight : 0;
   const caloriesByType = getCaloriesByMealType(meals, today);
@@ -32,10 +34,29 @@ export default function Meals() {
   const todayMeals = meals.filter(m => m.date === today);
   const filteredMeals = todayMeals.filter(m => m.mealType === activeMealType);
 
+  const allFoods: FoodItem[] = useMemo(() => {
+    const customFoodItems: FoodItem[] = customFoods.map(f => ({
+      name: f.name,
+      caloriesPer100g: f.caloriesPer100g,
+      category: f.category
+    }));
+    return [...foodDatabase, ...customFoodItems];
+  }, [customFoods]);
+
   const searchResults = useMemo(() => {
-    if (!searchQuery) return foodDatabase.slice(0, 10);
-    return searchFood(searchQuery).slice(0, 10);
-  }, [searchQuery]);
+    if (!searchQuery) return allFoods.slice(0, 10);
+    const lowerQuery = searchQuery.toLowerCase();
+    return allFoods.filter(f => 
+      f.name.toLowerCase().includes(lowerQuery)
+    ).slice(0, 10);
+  }, [searchQuery, allFoods]);
+
+  const isCustomFoodSaved = useMemo(() => {
+    if (!customFood.name) return false;
+    return customFoods.some(f => 
+      f.name.toLowerCase() === customFood.name.toLowerCase()
+    );
+  }, [customFood.name, customFoods]);
 
   const handleSelectFood = (food: { name: string; caloriesPer100g: number }) => {
     setSelectedFood(food);
@@ -56,6 +77,15 @@ export default function Meals() {
         amount: parseFloat(amount),
         calories,
       });
+      
+      if (saveToLibrary && !isCustomFoodSaved && customFood.name && customFood.calories) {
+        addCustomFood({
+          name: customFood.name,
+          caloriesPer100g: parseFloat(customFood.calories),
+          category: '自定义'
+        });
+      }
+      
       resetForm();
     }
   };
@@ -66,6 +96,20 @@ export default function Meals() {
     setCustomFood({ name: '', calories: '' });
     setAmount('100');
     setSearchQuery('');
+    setSaveToLibrary(false);
+  };
+
+  const handleToggleSaveFood = () => {
+    if (isCustomFoodSaved) {
+      const foodToRemove = customFoods.find(f => 
+        f.name.toLowerCase() === customFood.name.toLowerCase()
+      );
+      if (foodToRemove) {
+        removeCustomFood(foodToRemove.id);
+      }
+    } else {
+      setSaveToLibrary(!saveToLibrary);
+    }
   };
 
   return (
@@ -247,6 +291,32 @@ export default function Meals() {
                   </span>
                 </div>
               </div>
+
+              {customFood.name && customFood.calories && (
+                <button
+                  onClick={handleToggleSaveFood}
+                  className={clsx(
+                    'w-full flex items-center justify-center gap-2 py-3 rounded-xl transition-all',
+                    isCustomFoodSaved 
+                      ? 'bg-green-100 text-green-600' 
+                      : saveToLibrary 
+                        ? 'bg-turquoise-100 text-turquoise-600' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  )}
+                >
+                  {isCustomFoodSaved ? (
+                    <>
+                      <BookmarkCheck className="w-5 h-5" />
+                      <span>已保存到食物库</span>
+                    </>
+                  ) : (
+                    <>
+                      <Bookmark className="w-5 h-5" />
+                      <span>{saveToLibrary ? '将会保存到食物库' : '保存到食物库'}</span>
+                    </>
+                  )}
+                </button>
+              )}
 
               <button onClick={handleAddMeal} className="btn-primary w-full">
                 添加
