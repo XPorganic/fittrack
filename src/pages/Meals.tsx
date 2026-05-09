@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useStore } from '@/store/useStore';
 import { foodDatabase, searchFood } from '@/data/foodDatabase';
 import { getCaloriesByMealType } from '@/services/calorieService';
-import { X, Plus, Search, Trash2, Coffee, Sun, Moon, Cookie, Flame, Bookmark, BookmarkCheck } from 'lucide-react';
+import { X, Plus, Search, Trash2, Coffee, Sun, Moon, Cookie, Flame, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import dayjs from 'dayjs';
 import { clsx } from 'clsx';
 import { FoodItem } from '@/types';
@@ -18,7 +18,8 @@ const mealTypes: Array<'breakfast' | 'lunch' | 'dinner' | 'snack'> = ['breakfast
 
 export default function Meals() {
   const { profile, weights, meals, addMeal, removeMeal, customFoods, addCustomFood, removeCustomFood } = useStore();
-  const today = dayjs().format('YYYY-MM-DD');
+  const today = dayjs();
+  const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [activeMealType, setActiveMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('breakfast');
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,11 +29,11 @@ export default function Meals() {
   const [saveToLibrary, setSaveToLibrary] = useState(false);
 
   const currentWeight = weights.length > 0 ? weights[weights.length - 1].weight : 0;
-  const caloriesByType = getCaloriesByMealType(meals, today);
+  const caloriesByType = getCaloriesByMealType(meals, selectedDate);
   const totalCalories = Object.values(caloriesByType).reduce((sum, cal) => sum + cal, 0);
 
-  const todayMeals = meals.filter(m => m.date === today);
-  const filteredMeals = todayMeals.filter(m => m.mealType === activeMealType);
+  const currentMeals = meals.filter(m => m.date === selectedDate);
+  const filteredMeals = currentMeals.filter(m => m.mealType === activeMealType);
 
   const allFoods: FoodItem[] = useMemo(() => {
     const customFoodItems: FoodItem[] = customFoods.map(f => ({
@@ -58,6 +59,19 @@ export default function Meals() {
     );
   }, [customFood.name, customFoods]);
 
+  const isToday = selectedDate === today.format('YYYY-MM-DD');
+
+  const goToPreviousDay = () => {
+    setSelectedDate(dayjs(selectedDate).subtract(1, 'day').format('YYYY-MM-DD'));
+  };
+
+  const goToNextDay = () => {
+    const nextDay = dayjs(selectedDate).add(1, 'day');
+    if (nextDay.isBefore(today, 'day') || nextDay.isSame(today, 'day')) {
+      setSelectedDate(nextDay.format('YYYY-MM-DD'));
+    }
+  };
+
   const handleSelectFood = (food: { name: string; caloriesPer100g: number }) => {
     setSelectedFood(food);
     setCustomFood({ name: food.name, calories: food.caloriesPer100g.toString() });
@@ -71,7 +85,7 @@ export default function Meals() {
 
     if (customFood.name && calories > 0) {
       addMeal({
-        date: today,
+        date: selectedDate,
         mealType: activeMealType,
         food: customFood.name,
         amount: parseFloat(amount),
@@ -115,13 +129,45 @@ export default function Meals() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">饮食记录</h1>
-        <p className="text-gray-500 mt-1">{dayjs().format('MM月DD日')}</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">饮食记录</h1>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between mt-3">
+          <button 
+            onClick={goToPreviousDay}
+            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-turquoise-500" />
+            <span className="text-lg font-semibold text-gray-700">
+              {dayjs(selectedDate).format('MM月DD日 dddd')}
+            </span>
+            {isToday && (
+              <span className="px-2 py-0.5 bg-turquoise-100 text-turquoise-600 text-xs rounded-full">
+                今天
+              </span>
+            )}
+          </div>
+          
+          <button 
+            onClick={goToNextDay}
+            disabled={dayjs(selectedDate).isSame(today, 'day')}
+            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronRight className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
       </div>
 
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">今日热量</h2>
+          <h2 className="text-lg font-semibold text-gray-800">当日热量</h2>
           <div className="flex items-center gap-2">
             <Flame className="w-5 h-5 text-orange-500" />
             <span className="text-xl font-bold text-orange-500">{totalCalories}</span>
@@ -184,7 +230,7 @@ export default function Meals() {
           ) : (
             <div className="text-center py-8 text-gray-400">
               <p>还没有记录</p>
-              <p className="text-sm mt-1">点击下方添加今日饮食</p>
+              <p className="text-sm mt-1">点击下方添加{isToday ? '今日' : ''}饮食</p>
             </div>
           )}
         </div>

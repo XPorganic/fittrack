@@ -16,16 +16,17 @@ import {
   Filler
 } from 'chart.js';
 import dayjs from 'dayjs';
-import { Plus, TrendingUp, TrendingDown, Minus, Target, Flame } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Minus, Target, Flame, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 export default function Home() {
   const { profile, weights, meals, addWeight } = useStore();
+  const today = dayjs();
+  const [selectedDate, setSelectedDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [weightInput, setWeightInput] = useState('');
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('7d');
 
-  const today = dayjs().format('YYYY-MM-DD');
   const currentWeight = weights.length > 0 ? weights[weights.length - 1].weight : 0;
   const bmi = profile?.height && currentWeight ? calculateBMI(currentWeight, profile.height) : 0;
   const bmiInfo = getBMICategory(bmi);
@@ -35,14 +36,28 @@ export default function Home() {
   const { bmr, tdee } = profile && currentWeight 
     ? calculateDailyCalories(profile, currentWeight) 
     : { bmr: 0, tdee: 0 };
-  const consumed = getCaloriesConsumed(meals, today);
+  const consumed = getCaloriesConsumed(meals, selectedDate);
   const deficit = tdee - consumed;
   const calorieStatus = getCalorieStatus(deficit);
+
+  const isToday = selectedDate === today.format('YYYY-MM-DD');
+  const existingWeightForDate = weights.find(w => w.date === selectedDate);
+
+  const goToPreviousDay = () => {
+    setSelectedDate(dayjs(selectedDate).subtract(1, 'day').format('YYYY-MM-DD'));
+  };
+
+  const goToNextDay = () => {
+    const nextDay = dayjs(selectedDate).add(1, 'day');
+    if (nextDay.isBefore(today, 'day') || nextDay.isSame(today, 'day')) {
+      setSelectedDate(nextDay.format('YYYY-MM-DD'));
+    }
+  };
 
   const handleAddWeight = () => {
     const weight = parseFloat(weightInput);
     if (weight > 0 && weight < 300) {
-      addWeight(weight);
+      addWeight(weight, selectedDate);
       setWeightInput('');
     }
   };
@@ -92,14 +107,44 @@ export default function Home() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">你好！</h1>
-          <p className="text-gray-500 mt-1">今天是 {dayjs().format('MM月DD日')}</p>
+      <div>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">你好！</h1>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-gray-500">今日摄入</p>
+            <p className="text-xl font-bold text-turquoise-500">{getCaloriesConsumed(meals, today.format('YYYY-MM-DD'))} kcal</p>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500">今日摄入</p>
-          <p className="text-xl font-bold text-turquoise-500">{consumed} kcal</p>
+        
+        <div className="flex items-center justify-between mt-3">
+          <button 
+            onClick={goToPreviousDay}
+            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-turquoise-500" />
+            <span className="text-lg font-semibold text-gray-700">
+              {dayjs(selectedDate).format('MM月DD日 dddd')}
+            </span>
+            {isToday && (
+              <span className="px-2 py-0.5 bg-turquoise-100 text-turquoise-600 text-xs rounded-full">
+                今天
+              </span>
+            )}
+          </div>
+          
+          <button 
+            onClick={goToNextDay}
+            disabled={dayjs(selectedDate).isSame(today, 'day')}
+            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronRight className="w-5 h-5 text-gray-600" />
+          </button>
         </div>
       </div>
 
@@ -132,7 +177,7 @@ export default function Home() {
 
         <div className="card">
           <div className="flex items-center gap-2 mb-2">
-            <Flame className="w-4 h-4 text-orange-500" />
+            <Flame className="w-4 h-5 text-orange-500" />
             <span className="text-sm text-gray-500">热量缺口</span>
           </div>
           <p className="text-3xl font-bold" style={{ color: calorieStatus.color }}>
@@ -162,6 +207,11 @@ export default function Home() {
       <div className="card">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-800">记录体重</h2>
+          {existingWeightForDate && (
+            <span className="text-sm text-turquoise-600">
+              已记录: {existingWeightForDate.weight} kg
+            </span>
+          )}
         </div>
         <div className="flex gap-3">
           <div className="flex-1 relative">
@@ -213,7 +263,7 @@ export default function Home() {
       </div>
 
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">今日热量</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">当日热量</h2>
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">基础代谢 (BMR)</span>

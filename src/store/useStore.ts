@@ -12,7 +12,7 @@ interface AppState {
   customFoods: CustomFoodItem[];
   
   setProfile: (profile: Profile) => void;
-  addWeight: (weight: number) => void;
+  addWeight: (weight: number, date?: string) => void;
   addMeal: (meal: Omit<MealRecord, 'id'>) => void;
   removeMeal: (id: string) => void;
   setGoal: (goal: Goal) => void;
@@ -37,22 +37,22 @@ export const useStore = create<AppState>()(
 
       setProfile: (profile) => set({ profile }),
 
-      addWeight: (weight) => {
+      addWeight: (weight, date) => {
         const { profile, weights } = get();
         if (!profile) return;
         
-        const today = dayjs().format('YYYY-MM-DD');
+        const targetDate = date || dayjs().format('YYYY-MM-DD');
         const heightInMeters = profile.height / 100;
         const bmi = Number((weight / (heightInMeters * heightInMeters)).toFixed(1));
         
-        const existingIndex = weights.findIndex(w => w.date === today);
+        const existingIndex = weights.findIndex(w => w.date === targetDate);
         
         if (existingIndex >= 0) {
           const newWeights = [...weights];
-          newWeights[existingIndex] = { date: today, weight, bmi };
+          newWeights[existingIndex] = { date: targetDate, weight, bmi };
           set({ weights: newWeights });
         } else {
-          set({ weights: [...weights, { date: today, weight, bmi }] });
+          set({ weights: [...weights, { date: targetDate, weight, bmi }] });
         }
       },
 
