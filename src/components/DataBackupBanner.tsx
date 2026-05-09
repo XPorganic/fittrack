@@ -44,7 +44,7 @@ export default function DataBackupBanner() {
   return (
     <>
       {showReminder && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white py-2 px-4">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-amber-500 text-white py-2 px-4">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5" />
@@ -63,7 +63,7 @@ export default function DataBackupBanner() {
 
       {!showReminder && lastBackup && (
         <div className={clsx(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+          "fixed bottom-0 left-0 right-0 z-50 transition-all duration-300",
           "bg-emerald-500 text-white py-1.5 px-4"
         )}>
           <div className="max-w-4xl mx-auto flex items-center justify-between">
