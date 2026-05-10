@@ -78,13 +78,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-      
-      <div className="p-4 border-t border-gray-100">
-        <div className="px-4 py-3 rounded-xl bg-gradient-to-r from-turquoise-50 to-teal-50">
-          <p className="text-xs text-gray-500 mb-1">今日步数</p>
-          <p className="text-lg font-bold text-turquoise-600">8,432 步</p>
-        </div>
-      </div>
     </aside>
   );
 }
